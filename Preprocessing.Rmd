@@ -98,11 +98,11 @@ entre_sn_initial <-
   tibble(from = c(0, 0, 0 , 0, 0),
          to = c(1, 2, 3, 4, 5))
 
-data_tidied <- tibble()
+data_tidied_raw <- tibble()
 
 for (i in data_cleaned$id) {
   
-density <- 
+entre_sn_graph <- 
 data_cleaned |> 
   select(id, SN_1, SN_2, SN_3, SN_4, SN_5, SN_6, SN_7 ,SN_8 ,SN_9, SN_10) |> 
   filter(id == i) |> 
@@ -110,21 +110,26 @@ data_cleaned |>
   t() |> 
   as.data.frame() |> 
   na.omit() |> 
-  separate(col = V1,into = c("from", "to"),  sep = "; ") |> 
+  separate(col = V1,
+           into = c("from", 
+                    "to"),  
+           sep = "; ") |> 
   mutate(from = as.numeric(from),
          to = as.numeric(to)) |> 
   bind_rows(entre_sn_initial) |> 
   graph_from_data_frame() |> 
   as_tbl_graph()
 
-data_tidied_row <- tibble(density = graph.density(entre_sn_graph))
+data_tidied_row <- 
+  tibble(density = graph.density(entre_sn_graph))
 
-data_tidied <- data_tidied |> 
+data_tidied_raw <- data_tidied_raw |> 
   bind_rows(data_tidied_row)
 }
 
 data_tidied <- 
   data_cleaned |> 
-  bind_cols(data_tidied)
+  bind_cols(data_tidied_raw) |> 
+  select(-SN_1, -SN_2, -SN_3, -SN_4, -SN_5, -SN_6, -SN_7, -SN_8, -SN_9, -SN_10)
 
 ```
