@@ -1,0 +1,130 @@
+---
+title: "Entrepreneurial Marketing Analysis"
+author: "Sebastian Robledo"
+date: "2/5/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE, echo=FALSE}
+library(tidyverse)
+library(lavaan)
+library(igraph)
+library(tidygraph)
+```
+
+# Getting data
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data_raw <- 
+  read_csv("https://docs.google.com/spreadsheets/d/1jQjeQPA2xuL8U2vRALqU7JAZqpx6wRDi1gopXQOgiEQ/export?format=csv&gid=176910487")
+```
+
+# Cleaning data
+
+```{r}
+data_cleaned <- 
+  data_raw |> 
+  select(escolarly = "Grado de escolaridad",
+         years_established = "Años de establecimiento de la empresa",
+         staff = "Numero de trabajadores",
+         EM_1 = "1. Continuamente intentamos descubrir necesidades adicionales de nuestros clientes de las cuales no son conscientes.",
+         EM_2 = "2. Buscamos constantemente nuevas oportunidades de negocio.",
+         EM_3 = "3. Trabajamos para encontrar nuevos negocios o mercados a los que apuntar.",
+         EM_4 = "4. Nos consideramos una empresa innovadora" ,
+         EM_5 = "5. Nuestro negocio es a menudo el primero en comercializar  nuevos productos y servicios.",
+         EM_6 = "6. Nuestros competidores nos reconocen como líderes en innovación."  ,
+         EM_7 = "7. Nuestra estrategia de ventaja competitiva se basa en nuestra comprensión de las necesidades del cliente.",
+         EM_8 = "8. Medimos la satisfacción del cliente de forma sistemática y frecuente." ,
+         EM_9 = "9. Difundimos los datos sobre la satisfacción del cliente a todos los niveles en esta unidad de negocios de forma regular."  ,
+         EM_10 = "10. Para realizar cambios efectivos en nuestra oferta, estamos dispuestos a aceptar al menos un nivel moderado de riesgo de pérdidas significativas."    ,
+         EM_11 = "11. Alentamos a las personas de nuestra empresa a correr riesgos con nuevas ideas." ,
+         EM_12 = "12.Realizamos inversiones riesgosas (por ejemplo, nuevos empleados, instalaciones, deuda, opciones sobre acciones) para estimular el crecimiento futuro.", 
+         "12.Realizamos inversiones riesgosas (por ejemplo, nuevos empleados, instalaciones, deuda, opciones sobre acciones) para estimular el crecimiento futuro." ,
+         NC_1 = "13. No podemos resolver la mayoría de los problemas sin amigos",
+         NC_2 = "14. La red es tan importante como el negocio en sí mismo" ,
+         NC_3 = "15. Los negocios implican reciprocidad" ,
+         NC_4 = "16.Estamos alerta a los desarrollos del mercado que crean oportunidades potenciales de asociación"  ,
+         NC_5 = "17. Enviamos mensajes de saludo a nuevos amigos durante los festivales."   ,
+         NC_6 = "18. A menudo invitamos a nuevos amigos a participar en diversas actividades sociales"  ,
+         NC_7 = "19. Podemos leer bien a los demás y sé cómo se sienten en una situación determinada"  ,
+         NC_8 = "20. Sabemos bien lo que necesitan los demás y trato de hacer lo que puedo por ellos" ,
+         NC_9 = "21. Cuando tenemos desacuerdos con mis socios, generalmente me esfuerzo por ser flexible para alcanzar un compromiso mutuamente satisfactorio" ,
+         NC_10 = "22. Siempre analizamos lo que nos gustaría lograr con los demás",
+         NC_11 = "23. En nuestros amigos, sabemos bien en quién puedo confiar y en quién no" ,
+         NC_12 = "24. Podemos combinar mi energía y recursos con mis diferentes amigos" ,
+         NC_13 = "25. Tenemos la mente clara sobre la interdependencia entre mis amigos",
+         TS_1 = "26. Es cercana su relación de trabajo con sus clientes" ,
+         TS_2 = "27.  se comunica frecuentemente con sus clientes",
+         TS_3 = "28.Existe confianza mutua con sus clientes" ,
+         SN_1 = "Según su conocimiento marque en la casilla sí existe relación entre los clientes relacionados en la pregunta anterior.  [Cliente 1 y cliente 2]",
+         SN_2 = "Según su conocimiento marque en la casilla sí existe relación entre los clientes relacionados en la pregunta anterior.  [Cliente 1 y cliente 3]",
+         SN_3 = "Según su conocimiento marque en la casilla sí existe relación entre los clientes relacionados en la pregunta anterior.  [Cliente 1 y cliente 4]",
+         SN_4 = "Según su conocimiento marque en la casilla sí existe relación entre los clientes relacionados en la pregunta anterior.  [Cliente 1 y cliente 5]" ,
+         SN_5 = "Según su conocimiento marque en la casilla sí existe relación entre los clientes relacionados en la pregunta anterior.  [Cliente 2 y cliente 3]" ,
+         SN_6 = "Según su conocimiento marque en la casilla sí existe relación entre los clientes relacionados en la pregunta anterior.  [Cliente 2 y cliente 4]" ,
+         SN_7 = "Según su conocimiento marque en la casilla sí existe relación entre los clientes relacionados en la pregunta anterior.  [Cliente 2 y cliente 5]" ,
+         SN_8 = "Según su conocimiento marque en la casilla sí existe relación entre los clientes relacionados en la pregunta anterior.  [Cliente 3 y cliente 4]" ,
+         SN_9 = "Según su conocimiento marque en la casilla sí existe relación entre los clientes relacionados en la pregunta anterior.  [Cliente 3 y cliente 5]"   ,
+         SN_10 = "Según su conocimiento marque en la casilla sí existe relación entre los clientes relacionados en la pregunta anterior.  [Cliente 4 y cliente 5]" ,
+         SP_1 = "30. En el año 2019. La empresa alcanzó un volumen de ventas igual o mayor en comparación con los objetivos de la unidad de ventas",
+         SP_2 = "31. En el año 2019, la empresa mejoró su participación en el mercado en comparación con el principal competidor"  ,
+         SP_3 = "32. En el año 2019, la empresa mejoró su participación en el mercado en comparación con los objetivos de la unidad de ventas"  )  |> 
+  mutate(SN_1 = if_else(is.na(SN_1), SN_1, "1; 2" ),
+         SN_2 = if_else(is.na(SN_2), SN_2, "1; 3" ),
+         SN_3 = if_else(is.na(SN_3), SN_3, "1; 4" ),
+         SN_4 = if_else(is.na(SN_4), SN_4, "1; 5" ),
+         SN_5 = if_else(is.na(SN_5), SN_5, "2; 3" ),
+         SN_6 = if_else(is.na(SN_6), SN_6, "2; 4"),
+         SN_7 = if_else(is.na(SN_7), SN_7, "2; 5"),
+         SN_8 = if_else(is.na(SN_8), SN_8, "3; 4"), 
+         SN_9 = if_else(is.na(SN_9), SN_9, "3; 4"),
+         SN_10 = if_else(is.na(SN_10), SN_10, "4; 5") ) |> 
+  filter(!is.na(EM_1), # We removed two elements
+         !is.na(SP_1)) |>   # We removed twelve elements 
+  mutate(id = row_number())
+```
+
+# Tyding data
+
+Creating the social network
+
+```{r}
+
+entre_sn_initial <- 
+  tibble(from = c(0, 0, 0 , 0, 0),
+         to = c(1, 2, 3, 4, 5))
+
+data_tidied <- tibble()
+
+for (i in data_cleaned$id) {
+  
+density <- 
+data_cleaned |> 
+  select(id, SN_1, SN_2, SN_3, SN_4, SN_5, SN_6, SN_7 ,SN_8 ,SN_9, SN_10) |> 
+  filter(id == i) |> 
+  select(-id) |> 
+  t() |> 
+  as.data.frame() |> 
+  na.omit() |> 
+  separate(col = V1,into = c("from", "to"),  sep = "; ") |> 
+  mutate(from = as.numeric(from),
+         to = as.numeric(to)) |> 
+  bind_rows(entre_sn_initial) |> 
+  graph_from_data_frame() |> 
+  as_tbl_graph()
+
+data_tidied_row <- tibble(density = graph.density(entre_sn_graph))
+
+data_tidied <- data_tidied |> 
+  bind_rows(data_tidied_row)
+}
+
+data_tidied <- 
+  data_cleaned |> 
+  bind_cols(data_tidied)
+
+```
