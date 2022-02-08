@@ -1,0 +1,240 @@
+---
+title: "data_analysis_PLS-SEM"
+author: "Sebastian Robledo"
+date: "2/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# PLS-SEM Initial Analysis
+
+# Creando el ambiente
+
+```{r}
+library(lavaan)
+library(semPLS)
+library(tidyverse)
+library(here)
+library(igraph)
+library(psych)
+```
+
+# Cargar los datos
+
+```{r}
+data_tidied_pls_sem <- 
+  read_csv("https://docs.google.com/spreadsheets/d/19QZxj6wdvzg6u0sm_LPVNjjl1C56pkrXN_4Est1s-D0/export?format=csv&gid=71457899") |> 
+  select(-escolarly, 
+         -years_established, 
+         -staff)
+```
+
+# Cronbach alpha
+
+Marketing emprendedor
+
+```{r}
+psych::alpha(data_tidied_pls_sem %>% 
+        select(EM_1, 
+               EM_2, 
+               EM_3,
+               EM_4,
+               EM_5,
+               EM_6,
+               EM_7,
+               EM_8,
+               EM_9,
+               EM_10,
+               EM_11,
+               EM_12))$total$raw_alpha
+```
+
+Fortaleza del enlace
+
+```{r}
+psych::alpha(data_tidied_pls_sem %>% 
+        select(NC_1, 
+               NC_2, 
+               NC_3,
+               NC_4,
+               NC_5,
+               NC_6,
+               NC_7,
+               NC_8,
+               NC_9,
+               NC_10,
+               NC_11,
+               NC_12,
+               NC_13))$total$raw_alpha
+```
+
+FINTECH
+
+```{r}
+psych::alpha(data_tidied_pls_sem %>% 
+        select(TS_1, 
+               TS_2, 
+               TS_3))$total$raw_alpha
+```
+
+Sales performance
+
+```{r}
+psych::alpha(data_tidied_pls_sem %>% 
+        select(SP_1, 
+               SP_2, 
+               SP_3))$total$raw_alpha
+```
+
+# PLS-SEM Model
+
+Creamos el modelo
+
+```{r}
+data_tidied_pls_sem_model_mm <- 
+  matrix(c(
+    "EM", "EM_1",
+    "EM", "EM_2",
+    "EM", "EM_3",
+    "EM", "EM_4",
+    "EM", "EM_5", 
+    "EM", "EM_6",
+    "EM", "EM_7",
+    "EM", "EM_8",
+    "EM", "EM_9",
+    "EM", "EM_10",
+    "EM", "EM_11",
+    "EM", "EM_12",
+    "NC", "NC_1",
+    "NC", "NC_2",
+    "NC", "NC_3",
+    "NC", "NC_4",
+    "NC", "NC_5", 
+    "NC", "NC_6",
+    "NC", "NC_7",
+    "NC", "NC_8",
+    "NC", "NC_9",
+    "NC", "NC_10",
+    "NC", "NC_11",
+    "NC", "NC_12",
+    "NC", "NC_13",
+    "NS", "net_constraint",
+  #  "ER", "clustering",
+   # "ER", "centrality", # cargas por debajo de 0.3 
+  # "ER", "density",
+    "TS", "TS_1",
+    "TS", "TS_2",
+    "TS", "TS_3",
+    "SP", "SP_1",
+    "SP", "SP_2",
+    "SP", "SP_3"),
+    ncol = 2, byrow = TRUE
+  )
+```
+
+```{r}
+data_tidied_pls_sem_model_sm <- 
+  matrix(c(
+    "EM", "NC",
+    "NC", "NS",
+    "NC", "TS",
+    "NC", "SP",
+    "NS", "SP",
+    "TS", "SP"),
+    ncol = 2, byrow = TRUE
+  )
+```
+
+# Análisis del modelo
+
+```{r}
+data_tidied_PLS_mod <- 
+  plsm(data = data.frame(data_tidied_pls_sem), 
+       strucmod = data_tidied_pls_sem_model_sm, 
+       measuremod = data_tidied_pls_sem_model_mm)
+```
+
+```{r}
+data_tidied_PLS_fit <- 
+  sempls(model = data_tidied_PLS_mod, 
+         data = data_tidied_pls_sem)
+```
+
+```{r}
+plsLoadings(data_tidied_PLS_fit)
+```
+
+Cada variable latente tiene un carga fuerte con su variable manifiesta, si su carga está por encima de 0.3 o 0.5 para todas las variables manifiestas. Por lo tanto, no nos preocupamos por el tamaño de la muestra o la confiabilidad en las medidas.
+
+Ahora examinamos los coeficientes estructurales entre variables latentes
+
+```{r}
+pathCoeff(data_tidied_PLS_fit)
+```
+
+En esta tabla mostramos que el EM influye positivamente en NC y que NC influye positivamente en NS, TS, SP, también NS influye positivamente en SP y TS en SP.
+
+# Visualizando el modelo
+
+```{r}
+pathDiagram(data_tidied_PLS_fit, 
+            file = "gersson_PLS_fit", 
+            full = FALSE, 
+            digits = 2, 
+            edge.labels = "values", 
+            output.type = "graphics", 
+            graphics.fmt = "pdf")
+```
+
+# Evaluando el modelo PLS-SEM
+
+Como los modelos de PLS-SEM no evaluan el ajuste del modelo en general, se mostrará dos métodos por los cuales se puede entender su comportamiento.
+
+# Revisando los valores de R2
+
+```{r}
+rSquared(data_tidied_PLS_fit)
+```
+
+Los R2 dieron altos en todas las variables latentes menos para NS Es por esto que es importante utilizar más métodos para validar el modelo.
+
+# Haciendo un bootstrapping
+
+```{r}
+set.seed(04460)
+data_tidied_PLS_boot <- 
+  bootsempls(data_tidied_PLS_fit, 
+             nboot = 500, 
+             start = "ones")
+```
+
+El 100% de los modelos se pudieron generar a través de esta técnica. Esto quiere decir que el modelo en general se pude considerar bueno. También es importante ver los resutlados de todos los modelos para compararlos entre si.
+
+Las líneas grises en la siguiente figura representan bootstrap estimados de forma individual, las líneas rojas la mediana (línea sólida) y los intervalos de confianza a un 95% (líneas punteadas). Esta gráfica se lee analizando la dispersión a través de las líneas horizontales. Por ejemplo, las gran mayoría de estimaciones se ubican a la derecha del punto 0 (línea punteada vertical) para ME, lo que quiere decir que la gran mayoría de resultados dicen que hay una relación positiva entre ME y NC, NS, TS, y SP. Sin embargo, esta gráfica confirma que la relación entre NC y NS junto con NS y SP es débil ya que los datos se acercan y algunos pasan la línea punteada.
+
+```{r}
+parallelplot(data_tidied_PLS_boot, 
+             reflinesAt = 0, 
+             alpha = 0.8, 
+             varnames = attr(data_tidied_PLS_boot$t, "path")[33:38], 
+             main = "Caminos de coeficientes in 500 PLS bostrap interacciones(N = 112)")
+```
+
+# PLS-SEM - outcomes
+
+# 1. Correlation Matrix
+
+# 2. Reliability and Convergent Validity table
+
+# 3. Discriminant Validity (HTMT ratios and confidence intervals)
+
+# 4. Collinearity diagnosis
+
+# 5. Visualization
+
+# 6. Path coefficients, total and indirect effect
+
+# 7. Explanatory power and predictive relevance of the model (R square and Q square)
