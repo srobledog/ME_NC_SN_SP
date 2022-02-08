@@ -81,10 +81,8 @@ data_cleaned <-
          SN_6 = if_else(is.na(SN_6), SN_6, "2; 4"),
          SN_7 = if_else(is.na(SN_7), SN_7, "2; 5"),
          SN_8 = if_else(is.na(SN_8), SN_8, "3; 4"), 
-         SN_9 = if_else(is.na(SN_9), SN_9, "3; 4"),
+         SN_9 = if_else(is.na(SN_9), SN_9, "3; 5"),
          SN_10 = if_else(is.na(SN_10), SN_10, "4; 5") ) |> 
-  filter(!is.na(EM_1), # We removed two elements
-         !is.na(SP_1)) |>   # We removed twelve elements 
   mutate(id = row_number())
 ```
 
@@ -117,19 +115,36 @@ data_cleaned |>
   mutate(from = as.numeric(from),
          to = as.numeric(to)) |> 
   bind_rows(entre_sn_initial) |> 
-  graph_from_data_frame() |> 
-  as_tbl_graph()
+  graph_from_data_frame(directed = FALSE) |> 
+  as_tbl_graph() |> 
+  activate(nodes) |> 
+  mutate(net_constraint = node_constraint())
+
+entre_sn_graph_1 <- 
+  entre_sn_graph |> 
+  activate(nodes) |> 
+  filter(name == 0) |> 
+  data.frame() |> 
+  select(name, net_constraint)
 
 data_tidied_row <- 
-  tibble(density = graph.density(entre_sn_graph))
+  tibble(name = "0",
+         density = graph.density(entre_sn_graph)) |> 
+  right_join(entre_sn_graph_1) |> 
+  select(-name)
+         
 
-data_tidied_raw <- data_tidied_raw |> 
+data_tidied_raw <- 
+  data_tidied_raw |> 
   bind_rows(data_tidied_row)
 }
 
 data_tidied <- 
   data_cleaned |> 
   bind_cols(data_tidied_raw) |> 
-  select(-SN_1, -SN_2, -SN_3, -SN_4, -SN_5, -SN_6, -SN_7, -SN_8, -SN_9, -SN_10)
+  select(-SN_1, -SN_2, -SN_3, -SN_4, -SN_5, 
+         -SN_6, -SN_7, -SN_8, -SN_9, -SN_10) |> 
+  na.omit() |> 
+  select(-id)
 
 ```
