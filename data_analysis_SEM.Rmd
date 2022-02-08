@@ -1,0 +1,107 @@
+---
+title: "Data analysis"
+author: "Sebastian Robledo"
+date: "2/7/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Creating the environment
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lavaan)
+library(semPlot)
+library(semTools)
+```
+
+# Getting data
+
+```{r message=FALSE, warning=FALSE}
+data_tidied <- 
+  read_csv("https://docs.google.com/spreadsheets/d/19QZxj6wdvzg6u0sm_LPVNjjl1C56pkrXN_4Est1s-D0/export?format=csv&gid=71457899") |> 
+  select(-escolarly, 
+         -years_established, 
+         -staff)
+```
+
+# Exploratory Factor Analysis (EFA)
+
+```{r, include=FALSE}
+data_tidied_sc <- 
+  data_tidied |> 
+  select(-density, -net_constraint)
+
+data_tidied_sc <- scale(data_tidied_sc)
+summary(data_tidied_sc)
+```
+
+## Finding an EFA solution
+
+```{r, echo=FALSE, include=FALSE}
+eigen(cor(data_tidied_sc))
+```
+
+```{r, echo=FALSE, include=FALSE}
+factanal(data_tidied_sc, factors = 4)
+```
+
+Poor factors
+
+Now with oblimin rotation
+
+```{r, echo=FALSE, include=FALSE}
+(data_tidied_sc_fa_ob <- factanal(data_tidied_sc, factors = 4, rotation = "promax"))
+```
+
+Visualization
+
+```{r, echo=FALSE, include=FALSE}
+semPaths(data_tidied_sc_fa_ob, 
+         what = "est", 
+         residuals = FALSE, 
+         cut = 0.3, 
+         posCol = c("white", "darkgreen"), 
+         negCol = c("white", "red"), 
+         edge.label.cex = 0.75, 
+         nCharNodes = 7)
+```
+
+# Confirmatory Factor Analysis (CFA)
+
+## Model
+
+```{r}
+em_model <- 
+  "EM =~ EM_1 + EM_2 + EM_3 + EM_4 + EM_5 + EM_6 + EM_7 + EM_8 + EM_9 + EM_10
+   NC =~ NC_1 + NC_2 + NC_3 + NC_4 + NC_5 + NC_6 + NC_7 + NC_8 + NC_9 + NC_10 + NC_11 + NC_12 + NC_13
+   TS =~ TS_1 + TS_2 + TS_3
+   SP =~ SP_1 + SP_2 + SP_3
+   CO =~ net_constraint
+   NC ~  EM
+   CO ~ NC
+   TS ~ NC
+   SP ~ NC
+   SP ~ CO
+   SP ~ TS"
+```
+
+## Model Estimation
+
+```{r}
+em_fit <- cfa(em_model, data = data_tidied)
+summary(em_fit, fit.measures = TRUE)
+```
+
+## Visualizing paths
+
+```{r}
+semPaths(em_fit, 
+         what = "est", 
+         fade = FALSE, 
+         residuals = FALSE, 
+         edge.label.cex = 0.75)
+```
