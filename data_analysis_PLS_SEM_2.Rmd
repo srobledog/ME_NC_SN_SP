@@ -1,0 +1,24 @@
+---
+title: "data_analysis_PLS_SEM_SEMinR"
+author: "Sebastian Robledo"
+date: "2/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Creando el ambiente
+
+```{r}
+library(lavaan)
+library(semPLS)
+library(tidyverse)
+library(here)
+library(igraph)
+library(psych)
+library(seminr)
+```
+
+<https://www.youtube.com/watch?v=OlVepNU8GtU>

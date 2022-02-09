@@ -1,0 +1,66 @@
+---
+title: "data_analysis_PLS_SEM_SEMinR"
+author: "Sebastian Robledo"
+date: "2/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Creando el ambiente
+
+```{r}
+library(lavaan)
+library(semPLS)
+library(tidyverse)
+library(here)
+library(igraph)
+library(psych)
+library(seminr)
+```
+
+# Cargar los datos
+
+```{r}
+data_tidied_pls_sem <- 
+  read_csv("https://docs.google.com/spreadsheets/d/19QZxj6wdvzg6u0sm_LPVNjjl1C56pkrXN_4Est1s-D0/export?format=csv&gid=71457899") |> 
+  select(-escolarly, 
+         -years_established, 
+         -staff)
+```
+
+# Create measurement model
+
+```{r}
+simple_mm <-
+  constructs(
+    composite("EM", multi_items("EM_", 1:10)),
+    composite("NC", multi_items("NC_", 1:13)),
+    composite("NS", single_item("net_constraint")),
+    composite("TS", multi_items("TS_", 1:3)),
+    composite("SP", multi_items("SP_", 1:3))
+  )
+```
+
+# Create structural model
+
+```{r}
+simple_sm <- relationships(
+  paths(from = "ME", to = c("NC")),
+  paths(from = "NC", to = c("NS", "TS", "SP")),
+  paths(from = "NS", to = "SP"),
+  paths(from = "TS", to = "SP"))
+```
+
+# Estimate the model
+
+```{r}
+corp_rep_simple_model <-
+  estimate_pls(
+    data = data_tidied_pls_sem,
+    measurement_model = simple_mm,
+    structural_model = simple_sm
+  )
+```
