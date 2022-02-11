@@ -91,36 +91,36 @@ psych::alpha(data_tidied_pls_sem %>%
 
 # PLS-SEM Model
 
-Creamos el modelo
+Creamos el modelo de medidas
 
 ```{r}
 data_tidied_pls_sem_model_mm <- 
   matrix(c(
-    "EM", "EM_1",
-    "EM", "EM_2",
-    "EM", "EM_3",
-    "EM", "EM_4",
-    "EM", "EM_5", 
-    "EM", "EM_6",
-    "EM", "EM_7",
-    "EM", "EM_8",
-    "EM", "EM_9",
-    "EM", "EM_10",
-    "EM", "EM_11",
-    "EM", "EM_12",
-    "NC", "NC_1",
-    "NC", "NC_2",
-    "NC", "NC_3",
-    "NC", "NC_4",
-    "NC", "NC_5", 
-    "NC", "NC_6",
-    "NC", "NC_7",
-    "NC", "NC_8",
-    "NC", "NC_9",
-    "NC", "NC_10",
-    "NC", "NC_11",
-    "NC", "NC_12",
-    "NC", "NC_13",
+    "EM_CD", "EM_1",
+    "EM_CD", "EM_2",
+    "EM_CD", "EM_3",
+    "EM_CD", "EM_4",
+    "EM_CD", "EM_5", 
+    "EM_CD", "EM_6",
+    "EM_BOOT", "EM_7",
+    "EM_BOOT", "EM_8",
+    "EM_BOOT", "EM_9",
+    "EM_RT", "EM_10",
+    "EM_RT", "EM_11",
+    "EM_RT", "EM_12",
+    "NC_NO", "NC_1",
+    "NC_NO", "NC_2",
+    "NC_NO", "NC_3",
+    "NC_NB", "NC_4",
+    "NC_NB", "NC_5", 
+    "NC_NB", "NC_6",
+    "NC_NM", "NC_7",
+    "NC_NM", "NC_8",
+    "NC_NM", "NC_9",
+    "NC_NC", "NC_10",
+    "NC_NC", "NC_11",
+    "NC_NC", "NC_12",
+    "NC_NC", "NC_13",
     "NS", "net_constraint",
   #  "ER", "clustering",
    # "ER", "centrality", # cargas por debajo de 0.3 
@@ -135,9 +135,18 @@ data_tidied_pls_sem_model_mm <-
   )
 ```
 
+Creamos el modelo estructural
+
 ```{r}
 data_tidied_pls_sem_model_sm <- 
   matrix(c(
+    "EM_CD", "EM",
+    "EM_BOOT", "EM",
+    "EM_RT", "EM",
+    "NC_NO", "NC",
+    "NC_NB","NC",
+    "NC_NM","NC",
+    "NC_NC", "NC",
     "EM", "NC",
     "NC", "NS",
     "NC", "TS",
@@ -148,7 +157,7 @@ data_tidied_pls_sem_model_sm <-
   )
 ```
 
-# Análisis del modelo
+# Estimación del modelo
 
 ```{r}
 data_tidied_PLS_mod <- 
@@ -162,6 +171,8 @@ data_tidied_PLS_fit <-
   sempls(model = data_tidied_PLS_mod, 
          data = data_tidied_pls_sem)
 ```
+
+Inspeccionamos las cargas 
 
 ```{r}
 plsLoadings(data_tidied_PLS_fit)
